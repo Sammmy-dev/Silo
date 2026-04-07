@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  VIEWER
+}
+
+enum LocationType {
+  STORE
+  WAREHOUSE
+  ZONE
+}
+
+enum StockMovementType {
+  STOCK_IN
+  STOCK_OUT
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  RECEIVED
+  CANCELLED
+}
+
+model Organization {
+  id             String          @id @default(cuid())
+  name           String
+  industry       String
+  logoUrl        String
+  address        String
+  currency       String          @default("USD")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  users          User[]
+  locations      Location[]
+  categories     Category[]
+  suppliers      Supplier[]
+  products       Product[]
+  stockMovements StockMovement[]
+  purchaseOrders PurchaseOrder[]
+
+  @@index([createdAt])
+}
+
+model User {
+  id                   String          @id @default(cuid())
+  organizationId       String?
+  email                String          @unique
+  passwordHash         String
+  role                 UserRole
+  isVerified           Boolean         @default(false)
+  verificationToken    String?
+  resetToken           String?
+  resetTokenExpiry     DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  organization         Organization?   @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  stockMovements       StockMovement[]
+  createdPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model Location {
+  id             String          @id @default(cuid())
+  organizationId String
+  name           String
+  type           LocationType
+  address        String
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventoryItems InventoryItem[]
+  stockMovements StockMovement[]
+  purchaseOrders PurchaseOrder[]
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model Category {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  description    String
+  createdAt      DateTime     @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  products       Product[]
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model Supplier {
+  id             String          @id @default(cuid())
+  organizationId String
+  name           String
+  contactPerson  String
+  phone          String
+  email          String
+  address        String
+  paymentTerms   String
+  notes          String
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrders PurchaseOrder[]
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model Product {
+  id                 String              @id @default(cuid())
+  organizationId     String
+  name               String
+  sku                String
+  categoryId         String?
+  unitOfMeasure      String
+  costPrice          Decimal?
+  sellingPrice       Decimal?
+  barcode            String?
+  imageUrl           String?
+  description        String?
+  customAttributes   Json                @default("{}")
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category           Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  inventoryItems     InventoryItem[]
+  stockMovements     StockMovement[]
+  purchaseOrderItems PurchaseOrderItem[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([sku])
+  @@index([createdAt])
+}
+
+model InventoryItem {
+  id             String    @id @default(cuid())
+  productId      String
+  locationId     String
+  quantityOnHand Decimal   @default(0)
+  reorderPoint   Decimal   @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location       Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locationId])
+  @@index([productId])
+  @@index([createdAt])
+}
+
+model StockMovement {
+  id             String            @id @default(cuid())
+  organizationId String
+  productId      String
+  locationId     String
+  userId         String
+  movementType   StockMovementType
+  quantity       Decimal
+  reason         String?
+  referenceId    String?
+  notes          String?
+  createdAt      DateTime          @default(now())
+
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  product        Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  location       Location          @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([productId])
+  @@index([createdAt])
+}
+
+model PurchaseOrder {
+  id             String               @id @default(cuid())
+  organizationId String
+  supplierId     String
+  locationId     String
+  status         PurchaseOrderStatus
+  orderDate      DateTime
+  expectedDate   DateTime?
+  notes          String?
+  createdBy      String
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier       Supplier             @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  location       Location             @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  creator        User                 @relation("PurchaseOrderCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  items          PurchaseOrderItem[]
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model PurchaseOrderItem {
+  id               String        @id @default(cuid())
+  purchaseOrderId  String
+  productId        String
+  quantityOrdered  Decimal
+  quantityReceived Decimal       @default(0)
+  unitCost         Decimal
+
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product          Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+}
