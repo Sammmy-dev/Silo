@@ -1,14 +1,12 @@
-import dotenv from "dotenv";
-
 import app from "./app";
-import logger from "./config/logger";
+import { createModuleLogger } from "./config/logger";
 
-dotenv.config();
+const serverLogger = createModuleLogger("server");
 
 const port = Number(process.env.PORT) || 4000;
 
 process.on("uncaughtException", (error: Error) => {
-  logger.error("Uncaught exception", {
+  serverLogger.error("Uncaught exception", {
     errorMessage: error.message,
     stack: error.stack,
   });
@@ -17,7 +15,7 @@ process.on("uncaughtException", (error: Error) => {
 });
 
 process.on("unhandledRejection", (reason: unknown) => {
-  logger.error("Unhandled promise rejection", {
+  serverLogger.error("Unhandled promise rejection", {
     reason: reason instanceof Error
       ? { message: reason.message, stack: reason.stack }
       : reason,
@@ -25,5 +23,5 @@ process.on("unhandledRejection", (reason: unknown) => {
 });
 
 app.listen(port, () => {
-  logger.info("Server started", { port });
+  serverLogger.info("Server started", { port });
 });
