@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library";
 import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
 import { UserRole, type User } from "@prisma/client";
 import nodemailer from "nodemailer";
@@ -13,6 +14,8 @@ const authLogger = createModuleLogger("auth.service");
 const ACCESS_TOKEN_EXPIRY = "7d";
 const REFRESH_TOKEN_EXPIRY = "30d";
 const PASSWORD_SALT_ROUNDS = 12;
+
+const googleClient = new OAuth2Client();
 
 type SanitizedUser = {
   id: string;
@@ -140,6 +143,16 @@ const issueTokens = (user: Pick<User, "id" | "organizationId" | "role">) => {
   return { accessToken, refreshToken };
 };
 
+const issueAuthResponse = (user: Pick<User, "id" | "organizationId" | "email" | "role" | "isVerified" | "createdAt" | "updatedAt">) => {
+  const { accessToken, refreshToken } = issueTokens(user);
+
+  return {
+    accessToken,
+    refreshToken,
+    user: sanitizeUser(user),
+  };
+};
+
 export const register = async (email: string, password: string): Promise<SanitizedUser> => {
   const normalizedEmail = email.toLowerCase().trim();
   const existingUser = await prisma.user.findUnique({
@@ -240,15 +253,61 @@ export const login = async (email: string, password: string): Promise<{ accessTo
     throw new HttpError(403, "Please verify your email before logging in");
   }
 
-  const { accessToken, refreshToken } = issueTokens(user);
-
   authLogger.info("User logged in", { userId: user.id });
 
-  return {
-    accessToken,
-    refreshToken,
-    user: sanitizeUser(user),
-  };
+  return issueAuthResponse(user);
+};
+
+export const googleSignIn = async (idToken: string): Promise<{ accessToken: string; refreshToken: string; user: SanitizedUser }> => {
+  const googleClientId = getRequiredEnv("GOOGLE_CLIENT_ID");
+  const ticket = await googleClient.verifyIdToken({
+    idToken,
+    audience: googleClientId,
+  });
+  const payload = ticket.getPayload();
+
+  if (!payload?.email) {
+    throw new HttpError(401, "Google account email is unavailable");
+  }
+
+  if (!payload.email_verified) {
+    throw new HttpError(403, "Google account email is not verified");
+  }
+
+  const normalizedEmail = payload.email.toLowerCase().trim();
+  const placeholderPasswordHash = await bcrypt.hash(uuidv4(), PASSWORD_SALT_ROUNDS);
+
+  const user = await prisma.user.upsert({
+    where: { email: normalizedEmail },
+    update: {
+      isVerified: true,
+      verificationToken: null,
+      updatedAt: new Date(),
+    },
+    create: {
+      email: normalizedEmail,
+      passwordHash: placeholderPasswordHash,
+      role: UserRole.ADMIN,
+      isVerified: true,
+      verificationToken: null,
+    },
+    select: {
+      id: true,
+      organizationId: true,
+      email: true,
+      role: true,
+      isVerified: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  authLogger.info("User signed in with Google", {
+    userId: user.id,
+    email: user.email,
+  });
+
+  return issueAuthResponse(user);
 };
 
 export const forgotPassword = async (email: string): Promise<void> => {

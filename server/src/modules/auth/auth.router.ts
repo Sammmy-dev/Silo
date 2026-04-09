@@ -20,6 +20,7 @@ authRouter.use(authLimiter);
 authRouter.post("/register", authController.register);
 authRouter.post("/verify-email", authController.verifyEmail);
 authRouter.post("/login", authController.login);
+authRouter.post("/google", authController.googleSignIn);
 authRouter.post("/refresh", authController.refreshToken);
 authRouter.post("/forgot-password", authController.forgotPassword);
 authRouter.post("/reset-password", authController.resetPassword);

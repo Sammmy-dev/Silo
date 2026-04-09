@@ -2,6 +2,7 @@ import { type NextFunction, type Request, type Response } from "express";
 
 import {
   forgotPasswordSchema,
+  googleAuthSchema,
   loginSchema,
   refreshTokenSchema,
   registerSchema,
@@ -42,6 +43,17 @@ export const login = async (request: Request, response: Response, next: NextFunc
   try {
     const { email, password } = loginSchema.parse(request.body);
     const result = await authService.login(email, password);
+
+    response.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const googleSignIn = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { idToken } = googleAuthSchema.parse(request.body);
+    const result = await authService.googleSignIn(idToken);
 
     response.status(200).json(result);
   } catch (error) {
