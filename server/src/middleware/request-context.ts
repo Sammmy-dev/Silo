@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { type NextFunction, type Request, type Response } from "express";
 
-import { createModuleLogger } from "../config/logger";
+import { createModuleLogger } from "../config/logger.js";
 
 const requestLogger = createModuleLogger("http.request");
 

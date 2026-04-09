@@ -1,5 +1,5 @@
-import app from "./app";
-import { createModuleLogger } from "./config/logger";
+import app from "./app.js";
+import { createModuleLogger } from "./config/logger.js";
 
 const serverLogger = createModuleLogger("server");
 
