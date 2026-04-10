@@ -7,6 +7,7 @@ import { createModuleLogger } from "./config/logger.js";
 import requestContext from "./middleware/request-context.js";
 import authRouter from "./modules/auth/auth.router.js";
 import organizationRouter from "./modules/organization/organization.router.js";
+import usersRouter from "./modules/users/users.router.js";
 import { HttpError } from "./utils/http-error.js";
 
 const appLogger = createModuleLogger("app");
@@ -26,6 +27,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRouter);
 app.use("/api/organizations", organizationRouter);
+app.use("/api/users", usersRouter);
 
 app.get("/health", (request: Request, response: Response) => {
   request.logger.debug("Health check requested");
