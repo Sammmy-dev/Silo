@@ -2,12 +2,10 @@
 
 import axios, { type InternalAxiosRequestConfig } from "axios";
 
-import { useAuthStore } from "@/store/auth.store";
-
-const STORAGE_KEY = "silo-auth";
+import { AUTH_COOKIE_NAME, AUTH_STORAGE_KEY, useAuthStore } from "@/store/auth.store";
 
 const getPersistedToken = (): string | null => {
-  const persistedStore = window.localStorage.getItem(STORAGE_KEY);
+  const persistedStore = window.localStorage.getItem(AUTH_STORAGE_KEY);
 
   if (!persistedStore) {
     return null;
@@ -45,7 +43,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().clearAuth();
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      document.cookie = `${AUTH_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax`;
       window.location.replace("/login");
     }
 

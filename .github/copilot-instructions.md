@@ -137,7 +137,7 @@ Silo fills this gap by offering a flexible, modular inventory platform with:
 
 #### 4.1.1 Authentication & Organization Setup
 
-- User registration with email and password
+- User registration with email and password or Google SSO
 - Email verification on signup
 - Login with JWT-based session management
 - Password reset via email
@@ -616,6 +616,32 @@ The following are explicitly **not included** in any phase of this project:
 | Advanced roles & permissions | Medium |
 
 ---
+
+# 12. Testing Guide
+
+## 12.1 Philosophy
+
+- A feature is **not considered done** until it has tests.
+- Write tests **as you build**, not at the end.
+- Prefer testing **behavior over implementation** — test what the code does, not how it does it.
+- Keep tests **fast, isolated, and deterministic**.
+
+---
+
+## 12.2 Testing Stack
+
+| Layer | Tool | Purpose |
+|---|---|---|
+| Unit & Integration | **Vitest** | Fast TypeScript-native test runner for both frontend and backend |
+| Component Testing | **React Testing Library** | Tests UI behavior from the user's perspective |
+| API/Route Testing | **Supertest** | Sends real HTTP requests to Express in-process |
+| E2E Testing | **Playwright** | Full browser-based user flow testing |
+| API Mocking | **MSW (Mock Service Worker)** | Intercepts fetch calls without modifying app code |
+| Data Seeding | **@faker-js/faker** | Generates realistic mock data for tests |
+| Test Database | **PostgreSQL (Docker)** | Isolated database instance for backend integration tests |
+
+---
+
 
 ## Appendix
 
