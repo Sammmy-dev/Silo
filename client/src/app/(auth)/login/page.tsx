@@ -11,7 +11,7 @@ import { CircleAlert, Globe } from "lucide-react";
 
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore, type AuthUser } from "@/store/auth.store";
 
 const loginSchema = z.object({
   email: z.email(),
@@ -41,7 +41,7 @@ export default function LoginPage() {
         const response = await api.post("/auth/login", values);
         const { accessToken, user } = response.data as {
           accessToken: string;
-          user: Record<string, unknown>;
+          user: NonNullable<AuthUser>;
         };
 
         setAuth(user, accessToken);
@@ -59,7 +59,7 @@ export default function LoginPage() {
   return (
     <div className="space-y-9">
       <div className="space-y-4">
-        <h1 className="text-[2.15rem] font-semibold tracking-[-0.05em] text-silo-ink sm:text-[2.55rem]">Log in to Silo</h1>
+        <h1 className="text-[2rem] font-bold tracking-[-0.03em] text-silo-ink">Log in to Silo</h1>
         <p className="text-base leading-7 text-silo-muted">Enter your credentials to access your dashboard.</p>
       </div>
 
@@ -72,15 +72,15 @@ export default function LoginPage() {
           Continue with Google
         </button>
 
-        <div className="flex items-center gap-3 text-[0.68rem] font-semibold tracking-[0.24em] text-silo-muted uppercase">
-          <span className="h-px flex-1 bg-[#ece8dc]" />
-          or email
-          <span className="h-px flex-1 bg-[#ece8dc]" />
+        <div className="flex items-center gap-3 text-[0.78rem] text-silo-muted">
+          <span className="h-px flex-1 bg-[#e0ddd4]" />
+          — or continue with email —
+          <span className="h-px flex-1 bg-[#e0ddd4]" />
         </div>
 
         <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="space-y-2.5">
-            <label htmlFor="email" className="block text-[0.72rem] font-semibold tracking-[0.18em] text-silo-ink uppercase">
+            <label htmlFor="email" className="block text-[0.69rem] font-semibold tracking-[0.18em] text-silo-ink uppercase">
               Email Address
             </label>
             <input
@@ -99,7 +99,7 @@ export default function LoginPage() {
 
           <div className="space-y-2.5">
             <div className="flex items-center justify-between gap-4">
-              <label htmlFor="password" className="block text-[0.72rem] font-semibold tracking-[0.18em] text-silo-ink uppercase">
+              <label htmlFor="password" className="block text-[0.69rem] font-semibold tracking-[0.18em] text-silo-ink uppercase">
                 Password
               </label>
               <Link href="/forgot-password" className="text-[0.72rem] font-semibold text-silo-primary hover:underline">
